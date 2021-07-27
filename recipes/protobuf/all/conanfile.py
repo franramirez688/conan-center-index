@@ -1,4 +1,7 @@
-from conans import ConanFile, CMake, tools
+from conans import ConanFile, tools
+from conans.errors import ConanInvalidConfiguration
+from conan.tools.cmake import CMake, CMakeToolchain
+from conan.tools.layout import cmake_layout
 from conans.errors import ConanInvalidConfiguration
 import os
 import textwrap
@@ -6,8 +9,9 @@ import textwrap
 
 class ProtobufConan(ConanFile):
     name = "protobuf"
+    version = "3.17.1"
     description = "Protocol Buffers - Google's data interchange format"
-    topics = ("conan", "protobuf", "protocol-buffers",
+    topics = ("protobuf", "protocol-buffers",
               "protocol-compiler", "serialization", "rpc", "protocol-compiler")
     url = "https://github.com/conan-io/conan-center-index"
     homepage = "https://github.com/protocolbuffers/protobuf"
@@ -28,20 +32,8 @@ class ProtobufConan(ConanFile):
         "with_rtti": True,
         "lite": False,
     }
-
     short_paths = True
-
-    exports_sources = ["CMakeLists.txt", "patches/*"]
-    generators = "cmake"
-    _cmake = None
-
-    @property
-    def _source_subfolder(self):
-        return "source_subfolder"
-
-    @property
-    def _build_subfolder(self):
-        return "build_subfolder"
+    exports_sources = ["patches/*"]
 
     @property
     def _is_clang_x86(self):
