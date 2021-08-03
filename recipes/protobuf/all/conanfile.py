@@ -65,6 +65,9 @@ class ProtobufConan(ConanFile):
            if tools.Version(self.version) >= "3.15.4" and tools.Version(self.settings.compiler.version) < "4":
                 raise ConanInvalidConfiguration("protobuf {} doesn't support clang < 4".format(self.version))
 
+    def layout(self):
+        cmake_layout(self)
+
     def requirements(self):
         if self.options.with_zlib:
             self.requires("zlib/1.2.11")
@@ -72,27 +75,25 @@ class ProtobufConan(ConanFile):
     def source(self):
         tools.get(**self.conan_data["sources"][self.version])
         extracted_folder = self.name + "-" + self.version
-        os.rename(extracted_folder, self._source_subfolder)
+        os.rename(extracted_folder, self.source_folder)
 
     @property
     def _cmake_install_base_path(self):
         return os.path.join("lib", "cmake", "protobuf")
 
-    def _configure_cmake(self):
-        if not self._cmake:
-            self._cmake = CMake(self)
-            self._cmake.definitions["CMAKE_INSTALL_CMAKEDIR"] = self._cmake_install_base_path.replace("\\", "/")
-            self._cmake.definitions["protobuf_WITH_ZLIB"] = self.options.with_zlib
-            self._cmake.definitions["protobuf_BUILD_TESTS"] = False
-            self._cmake.definitions["protobuf_BUILD_PROTOC_BINARIES"] = True
-            if tools.Version(self.version) >= "3.14.0":
-                self._cmake.definitions["protobuf_BUILD_LIBPROTOC"] = True
-            if self._can_disable_rtti:
-                self._cmake.definitions["protobuf_DISABLE_RTTI"] = not self.options.with_rtti
-            if self.settings.compiler.get_safe("runtime"):
-                self._cmake.definitions["protobuf_MSVC_STATIC_RUNTIME"] = str(self.settings.compiler.runtime) in ["MT", "MTd", "static"]
-            self._cmake.configure(build_folder=self._build_subfolder)
-        return self._cmake
+    def generate(self):
+        cmake_toolchain = CMakeToolchain(self)
+        cmake_toolchain.variables["CMAKE_INSTALL_CMAKEDIR"] = self._cmake_install_base_path.replace("\\", "/")
+        cmake_toolchain.variables["protobuf_WITH_ZLIB"] = self.options.with_zlib
+        cmake_toolchain.variables["protobuf_BUILD_TESTS"] = False
+        cmake_toolchain.variables["protobuf_BUILD_PROTOC_BINARIES"] = True
+        if tools.Version(self.version) >= "3.14.0":
+            cmake_toolchain.variables["protobuf_BUILD_LIBPROTOC"] = True
+        if self._can_disable_rtti:
+            cmake_toolchain.variables["protobuf_DISABLE_RTTI"] = not self.options.with_rtti
+        if self.settings.compiler.get_safe("runtime"):
+            cmake_toolchain.variables["protobuf_MSVC_STATIC_RUNTIME"] = str(self.settings.compiler.runtime) in ["MT", "MTd", "static"]
+        cmake_toolchain.generate()
 
     def _patch_sources(self):
         for patch in self.conan_data.get("patches", {}).get(self.version, []):
@@ -101,7 +102,7 @@ class ProtobufConan(ConanFile):
         # Provide relocatable protobuf::protoc target and Protobuf_PROTOC_EXECUTABLE cache variable
         # TODO: some of the following logic might be disabled when conan will
         #       allow to create executable imported targets in package_info()
-        protobuf_config_cmake = os.path.join(self._source_subfolder, "cmake", "protobuf-config.cmake.in")
+        protobuf_config_cmake = os.path.join(self.source_folder, "cmake", "protobuf-config.cmake.in")
 
         tools.replace_in_file(
             protobuf_config_cmake,
@@ -152,7 +153,7 @@ class ProtobufConan(ConanFile):
 
         # Disable a potential warning in protobuf-module.cmake.in
         # TODO: remove this patch? Is it really useful?
-        protobuf_module_cmake = os.path.join(self._source_subfolder, "cmake", "protobuf-module.cmake.in")
+        protobuf_module_cmake = os.path.join(self.source_folder, "cmake", "protobuf-module.cmake.in")
         tools.replace_in_file(
             protobuf_module_cmake,
             "if(DEFINED Protobuf_SRC_ROOT_FOLDER)",
@@ -170,7 +171,7 @@ class ProtobufConan(ConanFile):
         cmake.build()
 
     def package(self):
-        self.copy("LICENSE", dst="licenses", src=self._source_subfolder)
+        self.copy("LICENSE", dst="licenses", src=self.source_folder)
         cmake = self._configure_cmake()
         cmake.install()
         tools.rmdir(os.path.join(self.package_folder, "lib", "pkgconfig"))
