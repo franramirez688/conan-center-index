@@ -376,6 +376,32 @@ When cross building, conan needs to compare `self.settings` and `self.settings_b
 
 An invalid topic has been detected. Remove or rename it.
 
+#### **<a name="KB-H065">#KB-H065</a>: "DEPRECATED NAMES, FILENAMES AND BUILD_MODULES"**
+
+Using `names`, `filenames` and `build_modules` is deprecated from Conan 1.42. The recommended way of setting this information is using `set_property` and `get_property` methods (available since Conan 1.36) of the `cpp_info` object.
+
+```python
+def set_property(self, property_name, value, generator=None)
+def get_property(self, property_name, generator=None)
+```
+
+New properties `cmake_target_name`, `cmake_file_name`, `cmake_module_target_name`, `cmake_module_file_name`, `pkg_config_name` and `cmake_build_modules` are defined to allow migrating `names`, `filenames` and `build_modules` properties to this model. In Conan 2.0 this will be the default way of setting these properties and also passing custom properties to generators. These properties are supported by the new `CMakeDeps` and `PkgConfigDeps` generators.
+
+New properties defined for CMake generators family:
+
+* `cmake_file_name` property will affect all cmake generators that accept the filenames property (cmake_find_package and cmake_find_package_multi).
+* `cmake_target_name` property will affect all cmake generators that accept the names property (cmake, cmake_multi, cmake_find_package, cmake_find_package_multi and cmake_paths).
+* `cmake_module_file_name` property supported by cmake_find_package generator. Sets the file name of the module files created by this generator.
+* `cmake_module_target_name` supported by cmake_find_package generator. Sets the target name of the module files created by this generator.
+* `cmake_build_modules` property replaces the build_modules property.
+
+Properties related to pkg_config:
+
+* `pkg_config_name` property sets the names property for pkg_config generator.
+* `pkg_config_custom_content` property supported by the pkg_config generator that will add user defined content to the .pc files created by this generator
+
+More information [here](https://docs.conan.io/en/latest/reference/conanfile/attributes.html#cpp-info).
+
 # Deprecated errors
 
 The following errors from the hooks are deprecated and no longer reported:
