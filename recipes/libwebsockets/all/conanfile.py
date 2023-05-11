@@ -273,7 +273,7 @@ class LibwebsocketsConan(ConanFile):
         return ";".join(paths).replace("\\", "/")
 
     def _find_library(self, libname, dep):
-        for path in self.dependencies[dep].libdirs:
+        for path in self.dependencies[dep].cpp_info.libdirs:
             lib_fullpath = os.path.join(path, self._get_library_prefix + libname + self._get_library_extension(dep))
 
             print("Test : " + str(lib_fullpath))
@@ -283,7 +283,7 @@ class LibwebsocketsConan(ConanFile):
                 raise ConanException("Library {} not found".format(lib_fullpath))
 
     def _find_libraries(self, dep):
-        return [self._find_library(lib, dep) for lib in self.dependencies[dep].libs]
+        return [self._find_library(lib, dep) for lib in self.dependencies[dep].cpp_info.libs]
 
     def generate(self):
         tc = CMakeToolchain(self)
@@ -300,52 +300,52 @@ class LibwebsocketsConan(ConanFile):
 
         if self.options.with_ssl == "openssl":
             tc.variables["LWS_OPENSSL_LIBRARIES"] = self._cmakify_path_list(self._find_libraries("openssl"))
-            tc.variables["LWS_OPENSSL_INCLUDE_DIRS"] = self._cmakify_path_list(self.deps_cpp_info["openssl"].include_paths)
+            tc.variables["LWS_OPENSSL_INCLUDE_DIRS"] = self._cmakify_path_list(self.dependencies["openssl"].cpp_info.includedirs)
         elif self.options.with_ssl == "mbedtls":
             tc.variables["LWS_WITH_MBEDTLS"] = True
             tc.variables["LWS_MBEDTLS_LIBRARIES"] = self._cmakify_path_list(self._find_libraries("mbedtls"))
-            tc.variables["LWS_MBEDTLS_INCLUDE_DIRS"] = self._cmakify_path_list(self.deps_cpp_info["mbedtls"].include_paths)
+            tc.variables["LWS_MBEDTLS_INCLUDE_DIRS"] = self._cmakify_path_list(self.dependencies["mbedtls"].cpp_info.includedirs)
         elif self.options.with_ssl == "wolfssl":
             tc.variables["LWS_WITH_WOLFSSL"] = True
             tc.variables["LWS_WOLFSSL_LIBRARIES"] = self._cmakify_path_list(self._find_libraries("wolfssl"))
-            tc.variables["LWS_WOLFSSL_INCLUDE_DIRS"] = self._cmakify_path_list(self.deps_cpp_info["wolfssl"].include_paths)
+            tc.variables["LWS_WOLFSSL_INCLUDE_DIRS"] = self._cmakify_path_list(self.dependencies["wolfssl"].cpp_info.includedirs)
         else:
             tc.variables["LWS_WITH_WOLFSSL"] = False
 
         tc.variables["LWS_WITH_LIBEV"] = self.options.with_libevent == "libev"
         if self.options.with_libevent == "libev":
             tc.variables["LWS_LIBEV_LIBRARIES"] = self._cmakify_path_list(self._find_libraries("libev"))
-            tc.variables["LWS_LIBEV_INCLUDE_DIRS"] = self._cmakify_path_list(self.deps_cpp_info["libev"].include_paths).replace("\\", "/")
+            tc.variables["LWS_LIBEV_INCLUDE_DIRS"] = self._cmakify_path_list(self.dependencies["libev"].cpp_info.includedirs).replace("\\", "/")
 
         tc.variables["LWS_WITH_LIBUV"] = self.options.with_libuv
         if self.options.with_libuv:
             tc.variables["LWS_LIBUV_LIBRARIES"] = self._cmakify_path_list(self._find_libraries("libuv"))
-            tc.variables["LWS_LIBUV_INCLUDE_DIRS"] = self._cmakify_path_list(self.deps_cpp_info["libuv"].include_paths)
+            tc.variables["LWS_LIBUV_INCLUDE_DIRS"] = self._cmakify_path_list(self.dependencies["libuv"].cpp_info.includedirs)
 
         tc.variables["LWS_WITH_LIBEVENT"] = self.options.with_libevent == "libevent"
         if self.options.with_libevent == "libevent":
             tc.variables["LWS_LIBEVENT_LIBRARIES"] = self._cmakify_path_list(self._find_libraries("libevent"))
-            tc.variables["LWS_LIBEVENT_INCLUDE_DIRS"] = self._cmakify_path_list(self.deps_cpp_info["libevent"].include_paths)
+            tc.variables["LWS_LIBEVENT_INCLUDE_DIRS"] = self._cmakify_path_list(self.dependencies["libevent"].cpp_info.includedirs)
 
         tc.variables["LWS_WITH_ZLIB"] = self.options.with_zlib != False
         tc.variables["LWS_WITH_MINIZ"] = self.options.with_zlib == "miniz"
         tc.variables["LWS_WITH_BUNDLED_ZLIB"] = self.options.with_zlib == "bundled"
         if self.options.with_zlib == "zlib":
             tc.variables["LWS_ZLIB_LIBRARIES"] = self._cmakify_path_list(self._find_libraries("zlib"))
-            tc.variables["LWS_ZLIB_INCLUDE_DIRS"] = self._cmakify_path_list(self.deps_cpp_info["zlib"].include_paths)
+            tc.variables["LWS_ZLIB_INCLUDE_DIRS"] = self._cmakify_path_list(self.dependencies["zlib"].cpp_info.includedirs)
         elif self.options.with_zlib == "miniz":
             tc.variables["MINIZ_LIBRARIES"] = self._cmakify_path_list(self._find_libraries("miniz"))
-            tc.variables["MINIZ_INCLUDE_DIRS"] = self._cmakify_path_list(self.deps_cpp_info["miniz"].include_paths)
+            tc.variables["MINIZ_INCLUDE_DIRS"] = self._cmakify_path_list(self.dependencies["miniz"].cpp_info.includedirs)
 
         tc.variables["LWS_WITH_SQLITE3"] = self.options.with_sqlite3
         if self.options.with_sqlite3:
             tc.variables["LWS_SQLITE3_LIBRARIES"] = self._cmakify_path_list(self._find_libraries("sqlite3"))
-            tc.variables["LWS_SQLITE3_INCLUDE_DIRS"] = self._cmakify_path_list(self.deps_cpp_info["sqlite3"].include_paths)
+            tc.variables["LWS_SQLITE3_INCLUDE_DIRS"] = self._cmakify_path_list(self.dependencies["sqlite3"].cpp_info.includedirs)
 
         tc.variables["LWS_WITH_FSMOUNT"] = self.options.with_libmount
         if self.options.with_libmount:
             tc.variables["LWS_LIBMOUNT_LIBRARIES"] = self._cmakify_path_list(self._find_libraries("libmount"))
-            tc.variables["LWS_LIBMOUNT_INCLUDE_DIRS"] = self._cmakify_path_list(self.deps_cpp_info["libmount"].include_paths)
+            tc.variables["LWS_LIBMOUNT_INCLUDE_DIRS"] = self._cmakify_path_list(self.dependencies["libmount"].cpp_info.includedirs)
 
         tc.variables["LWS_WITH_HUBBUB"] = self.options.with_hubbub
 
