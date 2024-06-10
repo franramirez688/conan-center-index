@@ -1,5 +1,5 @@
 from conan import ConanFile
-from conan.tools.files import get, copy, rmdir
+from conan.tools.files import get, copy, rmdir, replace_in_file
 from conan.tools.build import check_min_cppstd
 from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
 from conan.tools.microsoft import is_msvc, MSBuild, MSBuildToolchain
@@ -65,7 +65,16 @@ class SimdConan(ConanFile):
             tc.cache_variables["CMAKE_POLICY_DEFAULT_CMP0077"] = "NEW"
             tc.generate()
 
+    def _patch_sources(self):
+        # This is necessary to build it statically on Windows
+        if not self.options.shared and is_msvc(self):
+            replace_in_file(self, os.path.join(self.source_folder, "src", "Simd", "SimdConfig.h"), "//#define SIMD_STATIC", "#define SIMD_STATIC")
+            replace_in_file(self, os.path.join(self.source_folder, "prj", "vs2022", "Simd.vcxproj"),
+                            "<ConfigurationType>DynamicLibrary</ConfigurationType>",
+                            "<ConfigurationType>StaticLibrary</ConfigurationType>")
+
     def build(self):
+        self._patch_sources()
         if is_msvc(self):
             msbuild = MSBuild(self)
             msbuild.build(os.path.join(self.source_folder, "prj", "vs2022", "Simd.vcxproj"))
@@ -77,7 +86,7 @@ class SimdConan(ConanFile):
     def package(self):
         copy(self, pattern="LICENSE", dst=os.path.join(self.package_folder, "licenses"), src=self.source_folder)
         if is_msvc(self):
-            copy(self, pattern="*.h", dst=os.path.join(self.package_folder, "include", "Simd"), src=os.path.join(self.source_folder, "src", "Simd"), keep_path=True)
+            copy(self, pattern="*.h*", dst=os.path.join(self.package_folder, "include", "Simd"), src=os.path.join(self.source_folder, "src", "Simd"), keep_path=True)
             copy(self, pattern="*.lib", dst=os.path.join(self.package_folder, "lib"), src=self.source_folder, keep_path=False)
             copy(self, pattern="*.dll", dst=os.path.join(self.package_folder, "bin"), src=self.source_folder, keep_path=False)
         else:
