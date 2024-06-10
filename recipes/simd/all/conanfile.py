@@ -1,10 +1,10 @@
-from conan import ConanFile
-from conan.tools.files import get, copy, rmdir, replace_in_file
-from conan.tools.build import check_min_cppstd
-from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
-from conan.tools.microsoft import is_msvc, MSBuild, MSBuildToolchain
 import os
 
+from conan import ConanFile
+from conan.tools.build import check_min_cppstd
+from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
+from conan.tools.files import get, copy, rmdir, replace_in_file, collect_libs
+from conan.tools.microsoft import is_msvc, MSBuild, MSBuildToolchain
 
 required_conan_version = ">=1.53.0"
 
@@ -95,7 +95,7 @@ class SimdConan(ConanFile):
             rmdir(self, os.path.join(self.package_folder, "share"))
 
     def package_info(self):
-        self.cpp_info.libs = ["Simd"]
+        self.cpp_info.libs = collect_libs(self)
         self.cpp_info.set_property("cmake_file_name", "Simd")
         self.cpp_info.set_property("cmake_target_name", "Simd::Simd")
 
