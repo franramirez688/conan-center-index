@@ -1,3 +1,4 @@
+#include "Simd/SimdLib.h"
 #include "Simd/SimdLib.hpp"
 
 #include <iostream>
