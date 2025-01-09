@@ -257,7 +257,7 @@ class GdalConan(ConanFile):
             self.requires("mariadb-connector-c/3.3.3")
         if self.options.with_netcdf:
             self.requires("netcdf/4.8.1")
-        if self.options.with_odbc:
+        if self.options.with_odbc and self.settings.os != "Windows":
             self.requires("odbc/2.3.11")
         if self.options.with_opencl:
             self.requires("opencl-icd-loader/2023.12.14")
@@ -407,8 +407,8 @@ class GdalConan(ConanFile):
         tc.variables["GDAL_USE_MSSQL_NCLI"] = False
         tc.variables["GDAL_USE_MSSQL_ODBC"] = False
         tc.variables["GDAL_USE_MYSQL"] = bool(self.options.with_mysql)
+        tc.variables["GDAL_USE_ODBC"] = self.options.with_odbc and self.settings.os != "Windows"  # system libs in Windows
         tc.variables["GDAL_USE_NETCDF"] = self.options.with_netcdf
-        tc.variables["GDAL_USE_ODBC"] = self.options.with_odbc
         tc.variables["GDAL_USE_ODBCCPP"] = False
         tc.variables["GDAL_USE_OGDI"] = False
         tc.variables["GDAL_USE_OPENCAD"] = False
@@ -758,7 +758,10 @@ class GdalConan(ConanFile):
         if self.options.with_netcdf:
             self.cpp_info.requires.extend(["netcdf::netcdf"])
         if self.options.with_odbc:
-            self.cpp_info.requires.extend(["odbc::odbc"])
+            if not self.options.shared and self.settings.os == "Windows":
+                self.cpp_info.system_libs.extend(["odbc32", "odbccp32"])
+            if self.settings.os != "Windows":
+                self.cpp_info.requires.extend(["odbc::odbc"])
         if self.options.with_opencl:
             self.cpp_info.requires.extend(["opencl-icd-loader::opencl-icd-loader"])
         if self.options.with_openjpeg:
