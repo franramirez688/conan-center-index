@@ -407,7 +407,7 @@ class GdalConan(ConanFile):
         tc.variables["GDAL_USE_MSSQL_NCLI"] = False
         tc.variables["GDAL_USE_MSSQL_ODBC"] = False
         tc.variables["GDAL_USE_MYSQL"] = bool(self.options.with_mysql)
-        tc.variables["GDAL_USE_ODBC"] = self.options.with_odbc and self.settings.os != "Windows"  # system libs in Windows
+        tc.variables["GDAL_USE_ODBC"] = self.options.with_odbc # and self.settings.os != "Windows"  # system libs in Windows
         tc.variables["GDAL_USE_NETCDF"] = self.options.with_netcdf
         tc.variables["GDAL_USE_ODBCCPP"] = False
         tc.variables["GDAL_USE_OGDI"] = False
