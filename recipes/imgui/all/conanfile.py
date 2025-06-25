@@ -41,6 +41,8 @@ class IMGUIConan(ConanFile):
     def configure(self):
         if self.options.shared:
             self.options.rm_safe("fPIC")
+        if self.options.get_safe("enable_test_engine"):
+            self.license = ("MIT", "DocumentRef-LICENSE.txt:LicenseRef-ImGui-Test-Engine-License")
 
     def layout(self):
         cmake_layout(self, src_folder="src")
@@ -77,6 +79,10 @@ class IMGUIConan(ConanFile):
 
     def package(self):
         copy(self, pattern="LICENSE.txt", dst=os.path.join(self.package_folder, "licenses"), src=self.source_folder)
+        if self.options.get_safe("enable_test_engine"):
+            copy(self, pattern="LICENSE.txt",
+                 dst=os.path.join(self.package_folder, "licenses", "test_engine"),
+                 src=os.path.join(self.source_folder, "test_engine", "imgui_test_engine"))
         backends_folder = os.path.join(self.source_folder, "backends")
         copy(self, pattern="imgui_impl_*",
             dst=os.path.join(self.package_folder, "res", "bindings"),
