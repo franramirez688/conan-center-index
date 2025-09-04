@@ -9,7 +9,7 @@ from conan.tools.meson import Meson, MesonToolchain
 from conan.tools.scm import Version
 import os
 
-required_conan_version = ">=1.53.0"
+required_conan_version = ">=2.0"
 
 
 class WaylandConan(ConanFile):
@@ -68,8 +68,6 @@ class WaylandConan(ConanFile):
         get(self, **self.conan_data["sources"][self.version], strip_root=True)
 
     def generate(self):
-        env = VirtualBuildEnv(self)
-        env.generate()
         if can_run(self):
             env = VirtualRunEnv(self)
             env.generate(scope="build")
@@ -89,8 +87,7 @@ class WaylandConan(ConanFile):
         tc.project_options["documentation"] = False
         if not can_run(self):
             tc.project_options["build.pkg_config_path"] = self.generators_folder
-        if Version(self.version) >= "1.18.91":
-            tc.project_options["scanner"] = True
+        tc.project_options["scanner"] = True
         tc.generate()
 
     def _patch_sources(self):
@@ -137,7 +134,7 @@ class WaylandConan(ConanFile):
                 self.cpp_info.components["wayland-server"].system_libs = ["pthread", "m"]
 
             self.cpp_info.components["wayland-server"].resdirs = ["res"]
-            if self.version >= Version("1.21.0") and self.settings.os == "Linux":
+            if self.settings.os == "Linux":
                 self.cpp_info.components["wayland-server"].system_libs += ["rt"]
             self.cpp_info.components["wayland-server"].set_property("component_version", self.version)
             pkgconfig_variables = {
@@ -154,7 +151,7 @@ class WaylandConan(ConanFile):
             if self.settings.os in ["Linux", "FreeBSD"]:
                 self.cpp_info.components["wayland-client"].system_libs = ["pthread", "m"]
             self.cpp_info.components["wayland-client"].resdirs = ["res"]
-            if self.version >= Version("1.21.0") and self.settings.os == "Linux":
+            if self.settings.os == "Linux":
                 self.cpp_info.components["wayland-client"].system_libs += ["rt"]
             self.cpp_info.components["wayland-client"].set_property("component_version", self.version)
             pkgconfig_variables = {
