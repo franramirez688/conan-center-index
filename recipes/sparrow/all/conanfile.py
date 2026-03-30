@@ -53,7 +53,7 @@ class SparrowRecipe(ConanFile):
         return {
             "apple-clang": "16",
             "clang": "18",
-            "gcc": "13",
+            "gcc": "11",
             "msvc": "194",
         }
 
