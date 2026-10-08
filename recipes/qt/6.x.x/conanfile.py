@@ -13,9 +13,10 @@ from conan.tools.files import copy, get, replace_in_file, apply_conandata_patche
 from conan.tools.gnu import PkgConfigDeps
 from conan.tools.microsoft import msvc_runtime_flag, is_msvc
 from conan.tools.scm import Version
+from conan.tools.system import PyEnv
 from conan.errors import ConanException, ConanInvalidConfiguration
 
-required_conan_version = ">=2.0"
+required_conan_version = ">=2.26"
 
 class QtConan(ConanFile):
     _submodules = ["qtsvg", "qtdeclarative", "qttools", "qttranslations", "qtdoc",
@@ -399,7 +400,8 @@ class QtConan(ConanFile):
         if self.options.with_zstd:
             self.requires("zstd/[>=1.5 <1.6]")
         if self.options.qtwayland:
-            self.requires("wayland/1.22.0")
+            # Allow newer Wayland: system EGL (Mesa) may be built against a newer Wayland ABI, see #29476
+            self.requires("wayland/[>=1.22.0 <2]")
         if self.options.with_brotli:
             self.requires("brotli/1.1.0")
         if self.options.get_safe("qtwebengine") and self.settings.os == "Linux":
@@ -438,13 +440,21 @@ class QtConan(ConanFile):
                 self.tool_requires("flex/2.6.4")
 
         if self.options.qtwayland:
-            self.tool_requires("wayland/1.22.0")
+            self.tool_requires("wayland/<host_version>")
         if cross_building(self):
             self.tool_requires(f"qt/{self.version}")
 
     def generate(self):
+        # VirtualBuildEnv first, so the PATH entry from PyEnv (generated last) takes precedence
         ms = VirtualBuildEnv(self)
         ms.generate()
+
+        if self.options.get_safe("qtwebengine"):
+            # QtWebEngine's configure.cmake ("python3-html5lib" check) silently disables it
+            # if html5lib is not visible to the Python interpreter
+            pyenv = PyEnv(self)
+            pyenv.install(["html5lib~=1.0"])
+            pyenv.generate()
 
         tc = CMakeDeps(self)
         tc.set_property("libdrm", "cmake_file_name", "Libdrm")
@@ -588,6 +598,12 @@ class QtConan(ConanFile):
             else:
                 tc.variables[f"INPUT_{conf_arg}"] = "no"
 
+        if self.options.get_safe("qtimageformats"):
+            # JasPer and libmng are not provided by this recipe: keep their plugins disabled, so they are
+            # neither picked from the system nor declared in package_info() without being built
+            tc.variables["FEATURE_jasper"] = "OFF"
+            tc.variables["FEATURE_mng"] = "OFF"
+
         for feature in str(self.options.disabled_features).split():
             tc.variables[f"FEATURE_{feature}"] = "OFF"
 
@@ -651,6 +667,11 @@ class QtConan(ConanFile):
 
         with_egl = self.options.get_safe("with_egl", False)
         tc.variables["CMAKE_DISABLE_FIND_PACKAGE_EGL"] = not with_egl
+
+        if self.options.get_safe("qtwebengine"):
+            # Make CMake pick the PyEnv's Python (the one with html5lib) instead of any other found on the system
+            tc.cache_variables["Python3_ROOT_DIR"] = pyenv.env_dir
+            tc.cache_variables["Python3_EXECUTABLE"] = pyenv.env_exe
 
         tc.generate()
 
@@ -1404,11 +1425,12 @@ class QtConan(ConanFile):
                 _create_module("3DQuickRender", ["3DCore", "3DQuick", "3DRender", "Gui", "Qml"])
                 _create_module("3DQuickScene2D", ["3DCore", "3DQuick", "3DRender", "Gui", "Qml"])
         if self.options.get_safe("qtimageformats"):
+            # https://github.com/qt/qtimageformats/blob/v6.11.1/src/plugins/imageformats/CMakeLists.txt
+            # QJp2Plugin (jasper) and QMngPlugin (libmng) are not built, see generate()
             _create_plugin("ICNSPlugin", "qicns", "imageformats", ["Gui"])
-            _create_plugin("QJp2Plugin", "qjp2", "imageformats", ["Gui"])
-            _create_plugin("QMacHeifPlugin", "qmacheif", "imageformats", ["Gui"])
-            _create_plugin("QMacJp2Plugin", "qmacjp2", "imageformats", ["Gui"])
-            _create_plugin("QMngPlugin", "qmng", "imageformats", ["Gui"])
+            if is_apple_os(self):
+                _create_plugin("QMacHeifPlugin", "qmacheif", "imageformats", ["Gui"])
+                _create_plugin("QMacJp2Plugin", "qmacjp2", "imageformats", ["Gui"])
             _create_plugin("QTgaPlugin", "qtga", "imageformats", ["Gui"])
             _create_plugin("QTiffPlugin", "qtiff", "imageformats", ["Gui"])
             _create_plugin("QWbmpPlugin", "qwbmp", "imageformats", ["Gui"])
