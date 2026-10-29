@@ -61,7 +61,7 @@ class LimereportConan(ConanFile):
         # QString included in Irglobal.h and Limereport expects be running Qt on customer side
         self.requires("qt/[>=5.15 <7]", transitive_headers=True, transitive_libs=True)
         if self.options.with_zint:
-            self.requires("zint/2.10.0")
+            self.requires("zint/2.16.0")
 
     def validate(self):
         if self.settings.compiler.cppstd:
@@ -95,7 +95,12 @@ class LimereportConan(ConanFile):
 
     def _patch_sources(self):
         # Avoid using vendozied zint
-        replace_in_file(self, os.path.join(self.source_folder, "CMakeLists.txt"), "add_subdirectory(3rdparty)", "")
+        cmakelists = os.path.join(self.source_folder, "CMakeLists.txt")
+        replace_in_file(self, cmakelists, "add_subdirectory(3rdparty)", "")
+        if self.options.with_zint:
+            # The QZint target was defined by the vendored zint, use the one from the zint recipe instead
+            replace_in_file(self, cmakelists, "target_link_libraries( ${PROJECT_NAME} PRIVATE QZint)",
+                            "find_package(Zint REQUIRED CONFIG)\n    target_link_libraries( ${PROJECT_NAME} PRIVATE Zint::QZint)")
 
     def build(self):
         self._patch_sources()
